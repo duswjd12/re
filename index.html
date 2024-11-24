@@ -1,0 +1,197 @@
+
+
+<html><head><base href="." />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>멀티캠퍼스 GSAT 수험자 정보 조회</title>
+  <style>
+    body {
+      font-family: 'Noto Sans KR', sans-serif;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+      background-color: #f5f5f5;
+    }
+
+    h1 {
+      color: #2c3e50;
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    #searchForm {
+      background: white;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 8px;
+      color: #34495e;
+      font-weight: bold;
+    }
+
+    input {
+      width: 100%;
+      padding: 12px;
+      border: 2px solid #ddd;
+      border-radius: 6px;
+      font-size: 16px;
+      transition: border-color 0.3s;
+    }
+
+    input:focus {
+      border-color: #3498db;
+      outline: none;
+    }
+
+    button {
+      width: 100%;
+      padding: 12px;
+      background-color: #3498db;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 16px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+
+    button:hover {
+      background-color: #2980b9;
+    }
+
+    #result {
+      margin-top: 30px;
+      padding: 20px;
+      border-radius: 10px;
+      background: white;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      display: none;
+    }
+
+    #result.show {
+      display: block;
+      animation: fadeIn 0.5s;
+    }
+
+    #result ul {
+      list-style: none;
+      padding: 0;
+    }
+
+    #result li {
+      margin: 10px 0;
+      padding: 10px;
+      background: #f8f9fa;
+      border-radius: 6px;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .error {
+      color: #e74c3c;
+      padding: 10px;
+      border-radius: 6px;
+      background: #fde8e8;
+      margin-top: 20px;
+      display: none;
+    }
+
+    #data-table {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <h1>멀티캠퍼스<br>GSAT 수험자 정보 조회</h1>
+  
+  <form id="searchForm">
+    <div class="form-group">
+      <label for="name">이름:</label>
+      <input type="text" id="name" placeholder="이름을 입력하세요" required>
+    </div>
+    
+    <div class="form-group">
+      <label for="dob">생년월일 (YYMMDD):</label>
+      <input type="text" id="dob" placeholder="예: 971210" pattern="\d{6}" required>
+    </div>
+    
+    <button type="submit">조회하기</button>
+  </form>
+<div id="loading" style="display: none; text-align: center; margin-top: 20px; font-size: 16px; color: #3498db;">
+    조회 중 입니다. 잠시만 기다려주세요...
+</div>
+    <div id="result"></div>
+    <div class="error" id="error"></div>
+
+<style>
+    .message {
+        margin-top: 20px;
+        font-size: 16px;
+        color: #34495e;
+        text-align: center; /* 텍스트 가운데 정렬 */
+    }
+</style>
+
+<script>
+    const SERVER_URL = "https://flask-server-myi4.onrender.com";
+
+   document.getElementById('searchForm').addEventListener('submit', async function (e) {
+    e.preventDefault();
+    const name = document.getElementById('name').value.trim();
+    const dob = document.getElementById('dob').value.trim();
+    const resultDiv = document.getElementById('result');
+    const errorDiv = document.getElementById('error');
+    const loadingDiv = document.getElementById('loading'); // 로딩 메시지 가져오기
+
+    // 초기화
+    resultDiv.classList.remove('show');
+    errorDiv.style.display = 'none';
+    loadingDiv.style.display = 'block'; // 로딩 메시지 표시
+
+    try {
+        const response = await fetch(`${SERVER_URL}/search?name=${encodeURIComponent(name)}&dob=${encodeURIComponent(dob)}`);
+        if (response.ok) {
+            const data = await response.json();
+            resultDiv.innerHTML = `
+                <h3>🎉 조회 결과</h3>
+                <ul>
+                    <li>고사실번호: ${data.data.room}번 고사실</li>
+                    <li>좌석번호: ${data.data.seat}번 좌석</li>
+                    <li>수험번호: ${data.data.exam}</li>
+                </ul>
+                <div class="message">
+                    <strong>💌 멀티캠퍼스가 ${name}님을 응원합니다!</strong><br>
+                    <strong>${name}님의 노력이 좋은 결과로 이어질 거예요.😊</strong>
+                </div>
+            `;
+            resultDiv.classList.add('show');
+        } else {
+            const error = await response.json();
+            errorDiv.textContent = `Error: ${error.message}`;
+            errorDiv.style.display = 'block';
+        }
+    } catch (err) {
+        errorDiv.textContent = '서버에 연결하지 못했습니다. 나중에 다시 시도해주세요.';
+        errorDiv.style.display = 'block';
+    } finally {
+        loadingDiv.style.display = 'none'; // 로딩 메시지 숨기기
+    }
+});
+
+    document.getElementById('dob').addEventListener('input', function(e) {
+        this.value = this.value.replace(/[^\d]/g, '').slice(0, 6);
+    });
+</script>
+</body>
+</html>
